@@ -5,6 +5,7 @@ import (
     "strings"
 
 	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
@@ -21,7 +22,8 @@ import (
 // TODO: All links has to be prepended with http if not provided as 
 // redirects otherwise fail.
 
-// Naive approach to appending https if the provided url is missing the schema
+// Naive approach to prefixing https to the url if it's missing from the
+// original url
 func addPrefix(url string) string {
     if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
         return "https://" + url
@@ -47,12 +49,11 @@ func main() {
                 }
 
                 long_url := record.GetString("long_url")
-
-
                 return c.Redirect(http.StatusFound, long_url)
             },
             Middlewares: []echo.MiddlewareFunc{
                 apis.ActivityLogger(app),
+                middleware.CORS(),
             },
         })
 
@@ -101,6 +102,7 @@ func main() {
             },
             Middlewares: []echo.MiddlewareFunc{
                 apis.ActivityLogger(app),
+
             },
         })
 
