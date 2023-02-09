@@ -17,12 +17,8 @@ import (
 	"log"
 )
 
-// TODO: Handle collisions when the generated phrase already exists.
-// TODO: All links has to be prepended with http if not provided as
-// redirects otherwise fail.
-
-// Naive approach to prefixing https to the url if it's missing from the
-// original url
+// Naive approach to prefixing https to the url
+// if it's missing from the original url
 func addPrefix(url string) string {
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		return "https://" + url
@@ -34,6 +30,7 @@ func main() {
 	app := pocketbase.New()
 
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+
 		// Redirect from short url (the url passphrase) to full url
 		e.Router.AddRoute(echo.Route{
 			Method: http.MethodGet,
@@ -43,7 +40,8 @@ func main() {
 				record, err := app.Dao().FindFirstRecordByData("links", "short_url", short_url)
 
 				if err != nil {
-					log.Fatal(err)
+					log.Println(err)
+					return c.String(http.StatusNotFound, "Invalid url phrase")
 				}
 
 				long_url := record.GetString("long_url")
@@ -61,6 +59,7 @@ func main() {
 			Path:   "/api/createurl",
 			Handler: func(c echo.Context) error {
 				url := c.FormValue("url")
+				log.Println("Provided long url", url)
 
 				collection, err := app.Dao().FindCollectionByNameOrId("links")
 				if err != nil {
@@ -91,15 +90,14 @@ func main() {
 					"short_url": url_phrase,
 				})
 				if err := form.Submit(); err != nil {
-					return err
-				}
-				if err := app.Dao().SaveRecord(record); err != nil {
-					return err
+					log.Println(err)
+					return c.String(http.StatusBadRequest, "Invalid URL")
 				}
 				return c.String(http.StatusOK, url_phrase)
 			},
 			Middlewares: []echo.MiddlewareFunc{
 				apis.ActivityLogger(app),
+				middleware.CORS(),
 			},
 		})
 
