@@ -1,1 +1,2 @@
-- [ ] Should all URLs that pocketbase accepts be valid?
+# Notes
+- Should all URLs that pocketbase accepts be valid?

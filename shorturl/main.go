@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/labstack/echo/v5"
@@ -14,8 +15,12 @@ import (
 
 	"github.com/RasmusNygren/go-passphrase/passphrase"
 
+	"embed"
 	"log"
 )
+
+//go:embed pb_public/*
+var f embed.FS
 
 // Naive approach to prefixing https to the url
 // if it's missing from the original url
@@ -30,7 +35,7 @@ func main() {
 	app := pocketbase.New()
 
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-
+		e.Router.GET("/", apis.StaticDirectoryHandler(os.DirFS("./pb_public"), false))
 		// Redirect from short url (the url passphrase) to full url
 		e.Router.AddRoute(echo.Route{
 			Method: http.MethodGet,
@@ -41,7 +46,9 @@ func main() {
 
 				if err != nil {
 					log.Println(err)
-					return c.String(http.StatusNotFound, "Invalid url phrase")
+					// return c.String(http.StatusNotFound, "Invalid url phrase")
+					val, _ := f.ReadFile("pb_public/404.html")
+					return c.HTML(http.StatusNotFound, string(val))
 				}
 
 				long_url := record.GetString("long_url")
