@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/labstack/echo/v5"
@@ -35,7 +34,25 @@ func main() {
 	app := pocketbase.New()
 
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET("/", apis.StaticDirectoryHandler(os.DirFS("./pb_public"), false))
+
+		// Serve the index.html page for the root path
+		// to enable new URL creation
+		e.Router.AddRoute(echo.Route{
+			Method: http.MethodGet,
+			Path:   "/",
+			Handler: func(c echo.Context) error {
+				html, err := f.ReadFile("pb_public/index.html")
+				if err != nil {
+					log.Fatal("Error reading embedded file, this likely depends on a pathing issue or build error")
+				}
+				return c.HTML(http.StatusOK, string(html))
+			},
+			Middlewares: []echo.MiddlewareFunc{
+				apis.ActivityLogger(app),
+				middleware.CORS(),
+			},
+		})
+
 		// Redirect from short url (the url passphrase) to full url
 		e.Router.AddRoute(echo.Route{
 			Method: http.MethodGet,
@@ -46,9 +63,11 @@ func main() {
 
 				if err != nil {
 					log.Println(err)
-					// return c.String(http.StatusNotFound, "Invalid url phrase")
-					val, _ := f.ReadFile("pb_public/404.html")
-					return c.HTML(http.StatusNotFound, string(val))
+					html, err := f.ReadFile("pb_public/404.html")
+					if err != nil {
+						log.Fatal("Error reading embedded file, this likely depends on a pathing issue or build error")
+					}
+					return c.HTML(http.StatusNotFound, string(html))
 				}
 
 				long_url := record.GetString("long_url")
