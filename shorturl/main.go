@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v5"
-	"github.com/labstack/echo/v5/middleware"
+    "github.com/labstack/echo/v5/middleware"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
@@ -85,34 +85,49 @@ func main() {
 			Path:   "/api/createurl",
 			Handler: func(c echo.Context) error {
 				url := c.FormValue("url")
+                url = addPrefix(url)
 				log.Println("Provided long url", url)
+
+                {
+                    record, err := app.Dao().FindFirstRecordByData("links", "long_url", url)
+                    // Consider doing some logging if error is not null
+                    log.Println("record", record, "error", err)
+                    if record != nil && err == nil {
+                        url_phrase := record.GetString("short_url")
+                        return c.String(http.StatusOK, url_phrase)
+
+                    }
+                }
+
+
+				wordlist := passphrase.EffSmallShortWords()
+				url_phrase := passphrase.GeneratePhrase(wordlist, 2)
+
+				// We do not allow duplicate url phrases so check that the 
+                // url phrase is unique. If it is not unique, regenerate a new phrase
+				// until it is.
+				for {
+                    record, err := app.Dao().FindFirstRecordByData("links", "short_url", url_phrase)
+                    
+					if err != nil {
+						log.Println(err)
+					}
+                    if record == nil {
+                        break
+                    }
+					url_phrase = passphrase.GeneratePhrase(wordlist, 2)
+				}
 
 				collection, err := app.Dao().FindCollectionByNameOrId("links")
 				if err != nil {
 					log.Fatal(err)
 				}
-
-				wordlist := passphrase.EffSmallShortWords()
-				url_phrase := passphrase.GeneratePhrase(wordlist, 2)
-				record, err := app.Dao().FindFirstRecordByData("links", "short_url", url_phrase)
-
-				// We do not allow duplicate url phrases so regenerate a new phrase
-				// if the previous one already exists.
-				for record != nil {
-					url_phrase = passphrase.GeneratePhrase(wordlist, 2)
-					record, err = app.Dao().FindFirstRecordByData("links", "short_url", url_phrase)
-					if err != nil {
-						log.Fatal(err)
-					}
-				}
-
-				record = models.NewRecord(collection)
+                record := models.NewRecord(collection)
 				form := forms.NewRecordUpsert(app, record)
 
 				// Ensure that all long urls begin with https:// or http://
-				long_url := addPrefix(url)
 				form.LoadData(map[string]any{
-					"long_url":  long_url,
+					"long_url":  url,
 					"short_url": url_phrase,
 				})
 				if err := form.Submit(); err != nil {
