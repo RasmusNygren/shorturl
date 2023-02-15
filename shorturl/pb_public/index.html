@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+<title>URL shortener</title>
+</head>
+<body class="">
+    <div class="d-flex justify-content-center min-vh-100 flex-column align-items-center">
+    <h3>Input URL</h3>
+    <div class="input-group w-50">
+        <input 
+            class="form-control border border-primary rounded"
+            id="url-input"
+            placeholder="https://rasmusnygren.se">
+        </input>
+        <div class="input-group-append">
+            <button id="submit-url" class="btn btn-outline-primary ms-2" type="button">Submit</button>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a class="invisible" id="url-display" href="#">no value</a>
+        <button id="copy-button" type="button" class="invisible btn btn-light btn-outline-primary ms-2">Copy</button>
+    </div>
+    </div>
+    <script src="./script.js"></script>
+</body>
+</html>
+<script type="text/javascript">
+    let body = document.querySelector('body');
+
+
+    function getUrlAndUpdateElement() {
+        const val = document.getElementById("url-input").value;
+        const apiUrl = "https://crumburl.fly.dev" // Production URL
+        // const apiUrl = "http://127.0.0.1:8090" // Dev URL
+        fetch(`${apiUrl}/api/createurl`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `url=${val}`
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Invalid request")
+            }
+            return response
+        })
+        .then(response => response.text())
+        .then(data => {
+            element = document.getElementById("url-display");
+            const component = `<a id="url-display" href="${apiUrl}/${data}">${data}</a>`
+            element.outerHTML = component
+            document.getElementById("copy-button").classList.remove("invisible")
+        })
+        .catch(err => {
+            const component = `<div id="url-display" class="alert alert-danger mt-2" role="alert">
+                    Invalid request
+            </div>`
+
+            element = document.getElementById("url-display");
+            document.getElementById("copy-button").classList.add("invisible")
+            element.outerHTML = component
+            console.log(err)
+        })
+    }
+
+    function urlToClipboard() {
+        const val = document.getElementById("url-display").href
+        console.log("val", val)
+        navigator.clipboard.writeText(val)
+    }
+
+    document.getElementById("submit-url").addEventListener("click", getUrlAndUpdateElement)
+    document.getElementById("copy-button").addEventListener("click", urlToClipboard)
+</script>
