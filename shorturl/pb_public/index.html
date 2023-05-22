@@ -33,8 +33,8 @@
 
     function getUrlAndUpdateElement() {
         const val = document.getElementById("url-input").value;
-        // const apiUrl = "https://crumburl.fly.dev" // Production URL
-        const apiUrl = "http://127.0.0.1:8090" // Dev URL
+        const apiUrl = "https://urlcrumbler.com" // Production URL
+        // const apiUrl = "http://127.0.0.1:8090" // Dev URL
         fetch(`${apiUrl}/api/createurl`, {
             method: 'POST',
             headers: {
@@ -75,4 +75,10 @@
 
     document.getElementById("submit-url").addEventListener("click", getUrlAndUpdateElement)
     document.getElementById("copy-button").addEventListener("click", urlToClipboard)
+
+    document.getElementById('url-input').addEventListener("keydown",  (e) => {
+       if (e.keyCode === 13) {
+           document.getElementById("submit-url").click();
+       }
+    });
 </script>
