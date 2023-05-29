@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  crumburl:
+    container_name: "crumburl_service"
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.crumburl.rule=Host(`urlcrumbler.com`)"
+      - "traefik.http.routers.entrypoints.rule=websecure"
+      - "traefik.http.routers.tls.certresolver=myresolver"
+
+    volumes:
+      - pb_volume:/pb_data
+
+
+networks:
+  traefik:
+    name: traefik
+    external: true
+
+volumes:
+  pb_volume:

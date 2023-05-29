@@ -13,7 +13,7 @@ WORKDIR /pb
 RUN go build
 WORKDIR /
 
-EXPOSE 8080
+EXPOSE 8090
 
 
-CMD ["/pb/shorturl", "serve", "--http=0.0.0.0:8080"]
+CMD ["/pb/shorturl", "serve", "--http=0.0.0.0:8090"]
