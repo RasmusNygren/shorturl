@@ -1,0 +1,4 @@
+jobs:
+  deploy:
+    steps:
+      - flyctl deploy
